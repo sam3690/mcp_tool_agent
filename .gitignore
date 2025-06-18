@@ -9,3 +9,5 @@
 
 # Qodo directory
 .qodo/
+
+uv.lock
