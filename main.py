@@ -40,11 +40,7 @@ try:
     model = ChatOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=OPENROUTER_API_KEY,
-<<<<<<< HEAD
         model_name="openai/gpt-4o",
-=======
-        model_name="deepseek/deepseek-chat",
->>>>>>> 06306b5741fd802c4d20d32e76c6faf5a24ebbd7
         temperature=0.1,
         timeout=30,  # Add timeout
         max_retries=3,  # Add retry logic
