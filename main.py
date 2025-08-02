@@ -40,7 +40,7 @@ try:
     model = ChatOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=OPENROUTER_API_KEY,
-        model_name="meta-llama/llama-4-maverick:free",
+        model_name="openai/gpt-4o",
         temperature=0.1,
         timeout=30,  # Add timeout
         max_retries=3,  # Add retry logic
@@ -86,6 +86,8 @@ async def main():
                     agent_response = await agent.ainvoke({"messages": messages})
 
                     ai_message = agent_response["message"][-1].content
+                    # print("\nAgent:", ai_message)
+                    # ai_message = agent_response.get("output", "No output found.")
                     print("\nAgent:", ai_message)
                 except Exception as e:
                     print("Error:", e)
