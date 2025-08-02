@@ -40,7 +40,11 @@ try:
     model = ChatOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=OPENROUTER_API_KEY,
+<<<<<<< HEAD
         model_name="openai/gpt-4o",
+=======
+        model_name="deepseek/deepseek-chat",
+>>>>>>> 06306b5741fd802c4d20d32e76c6faf5a24ebbd7
         temperature=0.1,
         timeout=30,  # Add timeout
         max_retries=3,  # Add retry logic
@@ -58,38 +62,72 @@ server_params = StdioServerParameters(
 )
 
 async def main():
-    async with stdio_client(server_params) as (read,write):
-        async with ClientSession (read, write) as session:
-            await session.initialize()
-            tools = await  load_mcp_tools(session)
-            agent = create_react_agent(model, tools)
-
-            messages = [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that can scrape websites, crawl pages, and extract data using Firecrawl tools. Think step by step and use the appropriate tools to help the user."
-                },
-            ]
-
-            print("Available tools -", *[tool.name for tool in tools])
-            print("-" * 60)
-
-            while True:
-                user_input = input("\nYou: ")
-                if user_input == "quit":
-                    print("Exiting...")
-                    break
-
-                messages.append({"role": "user", "content": user_input[:175000]})
-
+    try:
+        async with stdio_client(server_params) as (read, write):
+            async with ClientSession(read, write) as session:
                 try:
-                    agent_response = await agent.ainvoke({"messages": messages})
+                    await session.initialize()
+                    tools = await load_mcp_tools(session)
+                    agent = create_react_agent(model, tools)
 
-                    ai_message = agent_response["message"][-1].content
-                    # print("\nAgent:", ai_message)
-                    # ai_message = agent_response.get("output", "No output found.")
-                    print("\nAgent:", ai_message)
+                    messages = [
+                        {
+                            "role": "system",
+                            "content": "You are a helpful assistant that can scrape websites, crawl pages, and extract data using Firecrawl tools. Think step by step and use the appropriate tools to help the user."
+                        },
+                    ]
+
+                    print("Available tools -", *[tool.name for tool in tools])
+                    print("-" * 60)
+
+                    while True:
+                        try:
+                            user_input = input("\nYou: ")
+                            if user_input.lower() in ["quit", "exit", "q"]:
+                                print("Exiting...")
+                                break
+
+                            messages.append({"role": "user", "content": user_input[:175000]})
+
+                            try:
+                                agent_response = await agent.ainvoke({"messages": messages})
+                                
+                                # Handle different response structures
+                                if isinstance(agent_response, dict):
+                                    if "messages" in agent_response and agent_response["messages"]:
+                                        ai_message = agent_response["messages"][-1].content
+                                    elif "output" in agent_response:
+                                        ai_message = agent_response["output"]
+                                    else:
+                                        # Try to find the actual message content
+                                        ai_message = str(agent_response)
+                                else:
+                                    ai_message = str(agent_response)
+                                
+                                print("\nAgent:", ai_message)
+                                
+                                # Add assistant response to conversation history
+                                messages.append({"role": "assistant", "content": ai_message})
+                                
+                            except Exception as e:
+                                logger.error(f"Agent error: {e}")
+                                print(f"Error: {e}")
+                                # Continue the loop instead of crashing
+                            
+                        except KeyboardInterrupt:
+                            print("\nExiting...")
+                            break
+                        except EOFError:
+                            print("\nExiting...")
+                            break
+                            
                 except Exception as e:
-                    print("Error:", e)
+                    logger.error(f"Session initialization error: {e}")
+                    print(f"Failed to initialize session: {e}")
+                    
+    except Exception as e:
+        logger.error(f"Connection error: {e}")
+        print(f"Failed to connect to MCP server: {e}")
+        print("Make sure firecrawl-mcp is installed: npm install -g firecrawl-mcp")
 if __name__ == "__main__":
     asyncio.run(main())
